@@ -1,33 +1,47 @@
 from aiogram import F, Router
 from aiogram.filters import CommandStart, Command
 from aiogram.types import Message, InputFile
-from src.keyboards import your_channels, project_channel
-import numpy as np
-from src.utils import create_video_with_stretched_image, authenticate, upload_video
+from aiogram.types import FSInputFile, CallbackQuery
+from src.keyboards import your_channels, project_channel, yt_or_int
+from src.utils import create_video_with_stretched_image, authenticate, upload_video, create_instagram_video_with_centered_image, delete_file
+
+import asyncio
 import os
 import uuid
-from aiogram.types import FSInputFile, CallbackQuery
+import requests
+
 
 router = Router()
 state = {}
-from aiogram import types
 
 @router.callback_query(F.data == "start")
 async def start_callback_handler(callback: CallbackQuery):
     await callback.answer()
     await callback.message.answer("Press /start, if you're subscribed")
 
+@router.callback_query(lambda query: query.data in ['yt', 'ig'])
+async def process_callback(callback_query: CallbackQuery):
+    answer = callback_query.data
+    chat_id = callback_query.message.chat.id
+    
+    if chat_id in state:
+        if answer == 'yt':
+            await create_video_for_youtube(callback_query.message)
+        elif answer == 'ig':
+            await create_video_for_instagram(callback_query.message)
+
 @router.message(CommandStart())
 async def cmd_start(message: Message):
     chat_id = "@seamusicmgmt"
     chat_member = await message.bot.get_chat_member(chat_id, message.from_user.id)
-            
+
     if chat_member.status in ["member", "administrator", "creator"]:
         await message.answer(f"Wassup, {message.from_user.username}! This is a bot created by @whyspacy, which can help to publish your videos to YouTube without a browser.\n\n/start - RESTART \n/profile - PROFILE\n/help - ALL COMMANDS \n")    
+        url = f"http://127.0.0.1:8000/subscription/telegram/{message.from_user.id}"
+        response = requests.get(url)
     else:
         await message.answer("For the bot to work, you need to subscribe to project channel", reply_markup=project_channel)
 
-        
 @router.message(Command("help"))
 async def cmd_message(message: Message):
     await message.answer("\n/start - RESTART \n/help - ALL COMMANDS \n/create - CREATE VIDEO WITH IMAGE \n/connect - CONNECT YOUTUBE CHANNEL /security - WHY IS IT SAFE \n/upload - UPLOAD VIDEO \n/seamusic - SEAMUSIC ACCOUNT | ? \n/profile - FASTTUBE PROFILE")
@@ -35,14 +49,18 @@ async def cmd_message(message: Message):
 @router.message(F.photo)
 async def get_photo(message: Message):
     chat_id = message.chat.id
+    if chat_id not in state:
+        state[chat_id] = {}  # Initialize state for the chat_id if it doesn't exist
+
     file_id = message.photo[-1].file_id
-    state[chat_id] = {"photo_id": await download_and_save_photo(message, file_id)}
+    state[chat_id]["photo_id"] = await download_and_save_photo(message, file_id)
     await message.answer("Изображение успешно загружено! Теперь скиньте аудиофайл исключительно формата mp3.")
+
 
 async def download_and_save_photo(message, file_id):
     file_path = (await message.bot.get_file(file_id)).file_path
     downloaded_file = await message.bot.download_file(file_path)
-    photo_path = f"temp_photo_{os.path.basename(file_path)}"
+    photo_path = f"temp_photo_{uuid.uuid4()}"
     with open(photo_path, "wb") as photo_file:
         photo_file.write(downloaded_file.read())
     return photo_path
@@ -54,32 +72,57 @@ async def get_audio(message: Message):
         photo_path = state[chat_id]["photo_id"]
         audio_file_id = message.audio.file_id
         audio_path = await download_and_save_audio(message, audio_file_id)
-        
-        await message.answer("Началось создание видео! Обычно процесс занимает 1-2 минуты")
+        state[chat_id] = {"photo_path": photo_path, "audio_path": audio_path}
+        await message.answer("Выберите формат видео: ", reply_markup=yt_or_int)
+    else:
+        await message.answer("Для создания видео загрузи сначала изображение, а затем аудиофайл.")
+
+async def create_video_for_youtube(message: Message):
+    chat_id = message.chat.id
+    if chat_id in state:
+        await message.answer("Началось создание видео для ютубе! Обычно процесс занимает 1-2 минуты")
+
+        photo_path = state[chat_id]["photo_path"]
+        audio_path = state[chat_id]["audio_path"]
 
         video_data = await create_video_with_stretched_image(audio_path, photo_path)
-        state[chat_id] = {"video_path": video_data["video_path"]} 
-        state[chat_id] = {"photo_path": photo_path, "audio_path": audio_path}
-        video_id = str(uuid.uuid4())
-        thumbnail_id = str(uuid.uuid4())
 
         await message.answer("Успешно!")
 
         video_input = FSInputFile(video_data["video_path"])
         await message.answer_video(video_input)
         await message.answer("Теперь вы можете загрузить его на ютуб по команде /upload")
-    else:
-        await message.answer("Для создания видео загрузи сначала изображение, а затем аудиофайл.")
+        await delete_file(video_data["video_path"])
+        await delete_file(photo_path)
+        await delete_file(audio_path)
+
+async def create_video_for_instagram(message: Message):
+    chat_id = message.chat.id
+    if chat_id in state:
+        await message.answer("Началось создание видео для инстраграма! Обычно процесс занимает 1-2 минуты")
+
+        photo_path = state[chat_id]["photo_path"]
+        audio_path = state[chat_id]["audio_path"]
+
+        video_data = await create_instagram_video_with_centered_image(audio_path, photo_path)
+
+        await message.answer("Успешно!")
+
+        video_input = FSInputFile(video_data["video_path"])
+        await message.answer_video(video_input)
+        await message.answer("Теперь вы можете загрузить его на ютуб по команде /upload")
+        await delete_file(video_data["video_path"])
+        await delete_file(photo_path)
+        await delete_file(audio_path)
 
 async def download_and_save_audio(message, file_id):
     file_path = (await message.bot.get_file(file_id)).file_path
     downloaded_file = await message.bot.download_file(file_path)
-    audio_path = f"temp_audio_{os.path.basename(file_path)}"
+    audio_path = f"temp_audio_{uuid.uuid4()}"
     with open(audio_path, "wb") as audio_file:
         audio_file.write(downloaded_file.read())
     return audio_path
 
-import asyncio
 
 @router.message(Command("connect"))
 async def connect_command(message: Message):

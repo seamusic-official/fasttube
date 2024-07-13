@@ -15,7 +15,13 @@ main = ReplyKeyboardMarkup(keyboard=[
    input_field_placeholder="Выберите нужную функцию из списка.")
 
 project_channel = InlineKeyboardMarkup(inline_keyboard=[
-    [InlineKeyboardButton(text=f'{fire} SEAMUSIC', url="https://t.me/seamusicmgmt")], [InlineKeyboardButton(text=f'{check} CHECK SUBCRIBE', callback_data="start")]
+    [InlineKeyboardButton(text=f'{fire} SEAMUSIC', url="https://t.me/seamusicmgmt")], 
+    [InlineKeyboardButton(text=f'{check} CHECK SUBCRIBE', callback_data="start")]
+])
+
+yt_or_int = InlineKeyboardMarkup(inline_keyboard=[
+    [InlineKeyboardButton(text='Youtube', callback_data='yt')],
+    [InlineKeyboardButton(text='Inst (YTShorts, TikTok)', callback_data='ig')],
 ])
 
 settings = InlineKeyboardMarkup(inline_keyboard=[

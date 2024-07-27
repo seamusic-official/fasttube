@@ -3,28 +3,29 @@ from aiogram.filters import CommandStart, Command
 from aiogram.types import Message, InputFile
 from aiogram.types import FSInputFile, CallbackQuery
 from src.keyboards import your_channels, project_channel, yt_or_int
-from src.utils import create_video_with_stretched_image, authenticate, upload_video, create_instagram_video_with_centered_image, delete_file
-
+from src.utils import create_video_with_stretched_image, create_instagram_video_with_centered_image, delete_file
+from src.yt.utils import initialize_upload, resumable_upload
+from src.states import CreateNew, CreateVideo, PublishVideo, Connect
 import asyncio
 import os
 import uuid
 import requests
-
+from aiogram.fsm.context import FSMContext
 
 router = Router()
-state = {}
+global_state = {}
 
 @router.callback_query(F.data == "start")
 async def start_callback_handler(callback: CallbackQuery):
     await callback.answer()
-    await callback.message.answer("Press /start, if you're subscribed")
+    await callback.message.answer("Нажми на /start, если подписался")
 
 @router.callback_query(lambda query: query.data in ['yt', 'ig'])
 async def process_callback(callback_query: CallbackQuery):
     answer = callback_query.data
     chat_id = callback_query.message.chat.id
     
-    if chat_id in state:
+    if chat_id in global_state:
         if answer == 'yt':
             await create_video_for_youtube(callback_query.message)
         elif answer == 'ig':
@@ -34,28 +35,62 @@ async def process_callback(callback_query: CallbackQuery):
 async def cmd_start(message: Message):
     chat_id = "@seamusicmgmt"
     chat_member = await message.bot.get_chat_member(chat_id, message.from_user.id)
+    url = f"http://127.0.0.1:8000/subscription/telegram/{message.from_user.id}"
+    params = {
+        "telegram_id": message.from_user.id
+    }
+    response = requests.get(url, params=params)
 
     if chat_member.status in ["member", "administrator", "creator"]:
-        await message.answer(f"Wassup, {message.from_user.username}! This is a bot created by @whyspacy, which can help to publish your videos to YouTube without a browser.\n\n/start - RESTART \n/profile - PROFILE\n/help - ALL COMMANDS \n")    
-        url = f"http://127.0.0.1:8000/subscription/telegram/{message.from_user.id}"
-        response = requests.get(url)
+        caption = f"Привет, {message.from_user.username}! Создано разработчиком @whyspacy как часть проекта @seamusicmgmt. Бот может создавать видео из mp3 и изображения или видео (зацикливая его на всю продолжительность аудио), а затем при желании вы можете выложить видео на ютуб НАПРЯМУЮ из этого телеграм бота.\n\n/start - перезапустить \n/profile - ваш профиль\n/create - создать видео\n/help - все комманды \n"
+        photo = FSInputFile("fasttube.jpg")
+        await message.answer_photo(photo=photo, caption=caption)
     else:
-        await message.answer("For the bot to work, you need to subscribe to project channel", reply_markup=project_channel)
+        await message.answer("Для начала работы бота, нужно подписаться на канал проекта", reply_markup=project_channel)
+
+async def send_newsletter(message: Message, all_users):
+    for user_id in all_users:
+        await message.bot.send_photo(user_id, photo=message.photo[-1].file_id, caption=message.caption)
+
+@router.message(Command("new"))
+async def forward_message(message: Message, state: FSMContext):
+    if message.from_user.username == "spxcyyy":
+        await message.answer("Теперь отправляй новость")
+        await state.set_state(CreateNew.is_continue)
+
+@router.message(CreateNew.is_continue, F.photo)
+async def forward_message(message: Message):
+    if message.from_user.username == "spxcyyy":
+        all_users = []
+        
+        url = "http://127.0.0.1:8000/subscription/telegram/"
+        response = requests.get(url)
+        print(response.json())
+        for id in response.json():
+            all_users.append(id)
+
+        await send_newsletter(message, all_users)
 
 @router.message(Command("help"))
 async def cmd_message(message: Message):
-    await message.answer("\n/start - RESTART \n/help - ALL COMMANDS \n/create - CREATE VIDEO WITH IMAGE \n/connect - CONNECT YOUTUBE CHANNEL /security - WHY IS IT SAFE \n/upload - UPLOAD VIDEO \n/seamusic - SEAMUSIC ACCOUNT | ? \n/profile - FASTTUBE PROFILE")
+    await message.answer("\n/start - Перезапустить \n/create - Создать видео \n/connect - Подключить свой ютуб канал /security - Почему это безопасно \n/upload - Загрузить видео на ютуб \n/seamusic - Аккаунт SEAMUSIC | ? \n/profile - Ваш профиль")
 
-@router.message(F.photo)
+
+@router.message(Command("create"))
+async def create_video(message: Message, state: FSMContext):
+    await message.answer("Для начала процесса создания видео, скиньте качественное изображение для того вида видео, которое хотите получить.")
+    await state.set_state(CreateVideo.image)
+
+@router.message(CreateVideo.image, F.photo)
 async def get_photo(message: Message):
+    
     chat_id = message.chat.id
-    if chat_id not in state:
-        state[chat_id] = {}  # Initialize state for the chat_id if it doesn't exist
+    if chat_id not in global_state:
+        global_state[chat_id] = {}  # Initialize global_state for the chat_id if it doesn't exist
 
     file_id = message.photo[-1].file_id
-    state[chat_id]["photo_id"] = await download_and_save_photo(message, file_id)
+    global_state[chat_id]["photo_id"] = await download_and_save_photo(message, file_id)
     await message.answer("Изображение успешно загружено! Теперь скиньте аудиофайл исключительно формата mp3.")
-
 
 async def download_and_save_photo(message, file_id):
     file_path = (await message.bot.get_file(file_id)).file_path
@@ -65,25 +100,25 @@ async def download_and_save_photo(message, file_id):
         photo_file.write(downloaded_file.read())
     return photo_path
 
-@router.message(F.audio)
+@router.message(CreateVideo.image, F.audio)
 async def get_audio(message: Message):
     chat_id = message.chat.id
-    if chat_id in state:
-        photo_path = state[chat_id]["photo_id"]
+    if chat_id in global_state:
+        photo_path = global_state[chat_id]["photo_id"]
         audio_file_id = message.audio.file_id
         audio_path = await download_and_save_audio(message, audio_file_id)
-        state[chat_id] = {"photo_path": photo_path, "audio_path": audio_path}
+        global_state[chat_id] = {"photo_path": photo_path, "audio_path": audio_path}
         await message.answer("Выберите формат видео: ", reply_markup=yt_or_int)
     else:
         await message.answer("Для создания видео загрузи сначала изображение, а затем аудиофайл.")
 
 async def create_video_for_youtube(message: Message):
     chat_id = message.chat.id
-    if chat_id in state:
+    if chat_id in global_state:
         await message.answer("Началось создание видео для ютубе! Обычно процесс занимает 1-2 минуты")
 
-        photo_path = state[chat_id]["photo_path"]
-        audio_path = state[chat_id]["audio_path"]
+        photo_path = global_state[chat_id]["photo_path"]
+        audio_path = global_state[chat_id]["audio_path"]
 
         video_data = await create_video_with_stretched_image(audio_path, photo_path)
 
@@ -98,11 +133,11 @@ async def create_video_for_youtube(message: Message):
 
 async def create_video_for_instagram(message: Message):
     chat_id = message.chat.id
-    if chat_id in state:
+    if chat_id in global_state:
         await message.answer("Началось создание видео для инстраграма! Обычно процесс занимает 1-2 минуты")
 
-        photo_path = state[chat_id]["photo_path"]
-        audio_path = state[chat_id]["audio_path"]
+        photo_path = global_state[chat_id]["photo_path"]
+        audio_path = global_state[chat_id]["audio_path"]
 
         video_data = await create_instagram_video_with_centered_image(audio_path, photo_path)
 
@@ -125,42 +160,42 @@ async def download_and_save_audio(message, file_id):
 
 
 @router.message(Command("connect"))
-async def connect_command(message: Message):
-
-    chat_id = message.chat.id
-    credentials = await authenticate()
-    state[chat_id] = {"credentials": credentials}
+async def connect_command(message: Message, state: FSMContext):
+    await message.answer("При нажатии на ссылку откроется страница авторизация Google, вам нужно будет выбрать тот канал на который должны будут выкладываться видео. Если вдруг высветится страница 'Эксперты Google не проверяли это приложение', то нужно нажать 'Дополнительные настройки' и нажать 'Перейти на страницу FASTTUBE (небезопасно)' \n Почему так происходит? Мы не можем получить одобрение от гугл по проверке телеграм бота, с этим, темболее из России будут возникать большие сложности.")
     
-    await message.answer("You're connected your channel, now you can to upload video in youtube channel /upload")
+    url = f"http://127.0.0.1:8000/subscription/auth_link"
+    response = requests.get(url)
+    data = response.json()
+
+    await message.answer(f"Cсылка: {data["auth_link"]}, после ")
+    await state.set_state(Connect.credentials)
+
+@router.message(Connect.credentials)
+async def connect_command(message: Message, state: FSMContext):
+    chat_id = message.chat.id
+    await message.answer("При нажатии на ссылку откроется страница авторизация Google, вам нужно будет выбрать тот канал на который должны будут выкладываться видео. Если вдруг высветится страница 'Эксперты Google не проверяли это приложение', то нужно нажать 'Дополнительные настройки' и нажать 'Перейти на страницу FASTTUBE (небезопасно)' \n Почему так происходит? Мы не можем получить одобрение от гугл по проверке телеграм бота, с этим, темболее из России будут возникать большие сложности.")
+    
+    url = f"http://127.0.0.1:8000/subscription/auth_link"
+    response = requests.get(url)
+    data = response.json()
+
+    await message.answer(f"Cсылка: {data.auth_link}")
+    global_state[chat_id] = {"credentials": response.json()}
+    
+    await message.answer("Поздравляю! Вы подключили свой ютуб канал, теперь можете выложить видео. /upload")
+    await state.set_state(Connect.credentials)
 
 
 @router.message(Command("upload"))
 async def upload_command(message: Message):
     chat_id = message.chat.id
     
-    if "credentials" in state.get(chat_id, {}):  # Проверяем наличие ключа "credentials" в словаре state[chat_id]
-        credentials = state[chat_id]["credentials"]
-        
-        await message.answer(f"Send or repost created on fasttube video here, after we can to change tags for video and upload it on YT")
-    else:
-        await message.answer("For starting need to connect your channel. For this press /connect and choose your youtube channel. Security information /security")
+    if "credentials" in global_state.get(chat_id, {}): 
+        credentials = global_state[chat_id]["credentials"]
 
-@router.message(F.video)
-async def get_video_command(message: Message):
-    chat_id = message.chat.id
-    
-    if "credentials" in state.get(chat_id, {}):  # Проверяем наличие ключа "credentials" в словаре state[chat_id]
-        credentials = state[chat_id]["credentials"]
-        file_id = message.video.file_id
-        video_path = await download_and_save_video(message, file_id)
-        video_data = {
-            "title": "title",
-            "description": "description",
-            "video_path": video_path
-        }
-        asyncio.create_task(upload_video(video_data=video_data, credentials=credentials))
+        await message.answer(f"Отправьте или репостните видео сделанное этим ботом ранее.")
     else:
-        await message.answer("For starting need to connect your channel. For this press /connect and choose your youtube channel. Security information /security")
+        await message.answer("Для начала загрузки видео, нужно подключить свой ютуб канал /connect. Если вы беспокоитесь за ваши данные и безопасность - /security")
 
 async def download_and_save_video(message, file_id):
     file_path = (await message.bot.get_file(file_id)).file_path
@@ -169,6 +204,68 @@ async def download_and_save_video(message, file_id):
     with open(video_path, "wb") as video_file:
         video_file.write(downloaded_file.read())
     return video_path
+
+@router.message(F.video)
+async def get_video_command(message: Message, state: FSMContext):
+    chat_id = message.chat.id
+    
+    if "credentials" in global_state.get(chat_id, {}):  # Проверяем наличие ключа "credentials" в словаре global_state[chat_id]
+        credentials = global_state[chat_id]["credentials"]
+        file_id = message.video.file_id
+        await message.answer("Загрузка видео началась..")
+        video_path = await download_and_save_video(message, file_id)
+        global_state[chat_id]["video_path"] = video_path
+        await message.answer("Видео успешно загружено. Теперь придумайте оригинальное название для видео.")
+        await state.set_state(PublishVideo.title)
+    else:
+        await message.answer("Для начала нужно подключить свой ютуб канал. For this press /connect and choose your youtube channel. Security information /security")
+
+@router.message(PublishVideo.title, F.text)
+async def get_video_title(message: Message, state: FSMContext):
+    chat_id = message.chat.id
+    global_state[chat_id]["video_title"] = message.text
+    await message.answer(f"Название: {message.text}, теперь напишите описание.")
+    await state.set_state(PublishVideo.description)
+
+@router.message(PublishVideo.description, F.text)
+async def get_video_tags(message: Message, state: FSMContext):
+    chat_id = message.chat.id
+    global_state[chat_id]["video_description"] = message.text
+    await message.answer(f"Описание: {message.text}, теперь введите теги для видео. Пример: музыка, type beat, ken karson и т.п.", parse_mode="MarkdownV2")
+    await state.set_state(PublishVideo.tags)
+
+@router.message(PublishVideo.tags, F.text)
+async def get_confirm_video(message: Message, state: FSMContext):
+    chat_id = message.chat.id
+    if "credentials" in global_state.get(chat_id, {}):  # Проверяем наличие ключа "credentials" в словаре global_state[chat_id]
+        global_state[chat_id]["video_tags"] = message.text
+        await message.answer(f"Окей, для подтверждения загрузки, введите комманду /publish.")
+        await state.set_state(PublishVideo.confirm)
+
+@router.message(PublishVideo.confirm, F.text)
+async def get_confirm_video(message: Message, state: FSMContext):
+    chat_id = message.chat.id
+    if "credentials" in global_state.get(chat_id, {}):  # Проверяем наличие ключа "credentials" в словаре global_state[chat_id]
+        await message.answer(f"Видео публикуется на ваш ютуб канал.")
+        credentials = global_state[chat_id]["credentials"]
+        global_state[chat_id]["video_tags"] = message.text
+        video_path = global_state[chat_id]["video_path"] 
+        video_title = global_state[chat_id]["video_title"] 
+        video_description = global_state[chat_id]["video_description"] 
+        video_tags = global_state[chat_id]["video_tags"] 
+        await initialize_upload(credentials, 
+                                video_path, 
+                                video_title, 
+                                video_description + "\n\n VIDEO MAKED AND PUBLISHED BY https://t.me/fasttubesmbot", 
+                                "10", 
+                                "public",
+                                video_tags
+                                )
+        
+        await state.set_state(PublishVideo.tags)
+        await message.answer(f"Видео опубликовано.")
+
+
 
 @router.message(Command("security"))
 async def security_command(message: Message):
@@ -180,10 +277,6 @@ async def create_video_command(message: Message):
 
 @router.message(Command("profile"))
 async def profile_command(message: Message):
-    caption = f"| FASTTUBE PROFILE FOR @{message.from_user.username} |\n\nYOUTUBE ACCOUNT: TRUE | /connect\nBALANCE: 8234р.\nFRIENDS: 23\nREFERRAL LINK: https://\nPREMIUM: TRUE | /premium\n\nSEAMUSIC ACCOUNT: TRUE | /seamusic \nFOR HELP - /help"
+    caption = f"| Профиль FASTTUBE пользователя @{message.from_user.username} |\n\nЮтуб канал: Есть | Подключить - /connect\nБаланс (рублей): 8234р.\nДрузья: 23\nРеферальная ссылка для приглашений друзей: https://\nПримиум: Есть | /premium\n\nАккаунт SEAMUSIC: TRUE | /seamusic \nВсе комманды - /help"
     photo = FSInputFile("fasttube.jpg")
     await message.answer_photo(photo=photo, caption=caption)
-
-@router.message(Command("create"))
-async def create_video_command(message: Message):
-    await message.answer("For creating video, send good quality image in chat.")

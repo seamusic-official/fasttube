@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fasttube
+    ports:
+      - '7777:7777'
+    restart: always
+    env_file:
+      - .env
+    volumes:
+      - ./:/server/
+    networks:
+      - server
+
+networks:
+  server:
+    driver: "bridge"

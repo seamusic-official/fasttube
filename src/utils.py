@@ -1,11 +1,13 @@
 from moviepy.editor import AudioFileClip, ImageClip, ffmpeg_tools
 from moviepy.editor import CompositeAudioClip, AudioFileClip, ColorClip, CompositeVideoClip
-from PIL import Image
 from moviepy.editor import AudioFileClip, ColorClip, CompositeVideoClip, ImageClip
+from moviepy.editor import VideoFileClip, AudioFileClip, CompositeVideoClip, ColorClip, concatenate_videoclips
+from PIL import Image
 import numpy as np
 import asyncio
-import os
 import uuid
+import os
+
 
 
 async def create_video_with_stretched_image(audio_path, photo_path):
@@ -91,6 +93,33 @@ async def create_instagram_video_with_centered_image(audio_path, photo_path):
     await asyncio.to_thread(final_clip.write_videofile, video_path, fps=24, codec='libx264')
 
     return {"video_path": video_path, "duration": audio.duration}
+
+async def create_video_with_repeating_video(audio_path, video_path):
+    audio = AudioFileClip(audio_path)
+    video = VideoFileClip(video_path)
+    loops_needed = int(audio.duration / video.duration) + 1
+    repeated_video = concatenate_videoclips([video] * loops_needed)
+    final_video = repeated_video.subclip(0, audio.duration)
+    background_clip = ColorClip((1920, 1080), color=[0, 0, 0], duration=audio.duration)
+    final_clip = CompositeVideoClip([background_clip, final_video.set_position(("center", "center"))])
+    final_clip = final_clip.set_audio(audio)
+    video_output_path = f"youtube-video-with-repeating-video-{uuid.uuid4()}.mp4"
+    await asyncio.to_thread(final_clip.write_videofile, video_output_path, fps=24, codec='libx264')
+    return {"video_path": video_output_path, "duration": audio.duration}
+
+async def create_instagram_video_with_repeating_video(audio_path, video_path):
+    audio = AudioFileClip(audio_path)
+    video = VideoFileClip(video_path)
+    loops_needed = int(audio.duration / video.duration) + 1
+    repeated_video = concatenate_videoclips([video] * loops_needed)
+    final_video = repeated_video.subclip(0, audio.duration)
+    background_clip = ColorClip((1080, 1920), color=[0, 0, 0], duration=audio.duration)
+    final_clip = CompositeVideoClip([background_clip, final_video.set_position(("center", "center"))])
+    final_clip = final_clip.set_audio(audio)
+    video_output_path = f"inst-or-ytshorts-or-tiktok-video-with-repeating-video-{uuid.uuid4()}.mp4"
+    await asyncio.to_thread(final_clip.write_videofile, video_output_path, fps=24, codec='libx264')
+
+    return {"video_path": video_output_path, "duration": audio.duration}
 
 
 async def delete_file(file_path):

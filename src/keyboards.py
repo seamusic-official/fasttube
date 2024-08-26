@@ -19,10 +19,16 @@ project_channel = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text=f'{check} CHECK SUBCRIBE', callback_data="start")]
 ])
 
-yt_or_int = InlineKeyboardMarkup(inline_keyboard=[
-    [InlineKeyboardButton(text='Youtube', callback_data='yt')],
-    [InlineKeyboardButton(text='Inst (YTShorts, TikTok)', callback_data='ig')],
+yt_or_inst_for_photo_type = InlineKeyboardMarkup(inline_keyboard=[
+    [InlineKeyboardButton(text='Youtube', callback_data='yt_photo')],
+    [InlineKeyboardButton(text='Inst (YTShorts, TikTok)', callback_data='ig_photo')],
 ])
+
+yt_or_inst_for_video_type = InlineKeyboardMarkup(inline_keyboard=[
+    [InlineKeyboardButton(text='Youtube', callback_data='yt_video')],
+    [InlineKeyboardButton(text='Inst (YTShorts, TikTok)', callback_data='ig_video')],
+])
+
 
 settings = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text="Your channel", url="https://t.me/whyspacy")]

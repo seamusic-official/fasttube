@@ -17,3 +17,7 @@ class PublishVideo(StatesGroup):
 class Connect(StatesGroup):
     link = State()
     credentials = State()
+
+class CreateVideoFromVideo(StatesGroup):
+    video = State()
+    audio = State()

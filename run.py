@@ -6,7 +6,7 @@ from aiogram.types import Message
 from config import settings
 from src.handlers import router
 
-bot = Bot(settings.telegram.TELEGRAM_API_KEY)
+bot = Bot(settings.telegram.TELEGRAM_API_KEY, timeout=60)
 dp = Dispatcher()
 
 async def main():

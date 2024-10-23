@@ -1,0 +1,4 @@
+fireworks = "🎆"
+fire = "🔥"
+dollar = "💲"
+check = "✅"

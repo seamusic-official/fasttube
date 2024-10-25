@@ -89,7 +89,7 @@ async def create_video_with_repeating_video(audio_path, video_path):
     final_video = repeated_video.subclip(0, audio.duration)
     
     background_clip = ColorClip((1920, 1080), color=[0, 0, 0], duration=audio.duration)
-    final_clip = CompositeVideoClip([background_clip, final_video.set_position(("center", "center"))])
+    final_clip = CompositeVideoClip([background_clip, final_video.set_position(("center"))])
     final_clip = final_clip.set_audio(audio)
     
     directory = "youtube-repeating-videos/"
@@ -112,7 +112,7 @@ async def create_instagram_video_with_repeating_video(audio_path, video_path):
 
     background_clip = ColorClip((1080, 1920), color=[0, 0, 0], duration=audio.duration)
 
-    final_clip = CompositeVideoClip([background_clip, final_video.set_position(("center", "center"))])
+    final_clip = CompositeVideoClip([background_clip, final_video.set_position(("center"))])
     final_clip = final_clip.set_audio(audio)
     
     directory = "instagram-repeating-videos/"

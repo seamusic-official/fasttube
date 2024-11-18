@@ -20,4 +20,4 @@ jobs:
           echo "$SSH_PRIVATE_KEY" > private_key
           chmod 600 private_key
           rsync -avz -e "ssh -i private_key -o StrictHostKeyChecking=no" . root@185.251.90.58:22:/root/fasttube
-          ssh -i private_key -o StrictHostKeyChecking=no root@185.251.90.58:22 'cd /root/fasttube && sudo systemctl restart fattube'
+          ssh -i private_key -o StrictHostKeyChecking=no root@185.251.90.58:22 -v 'cd /root/fasttube && sudo systemctl restart fattube'

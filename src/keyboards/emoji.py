@@ -1,0 +1,5 @@
+fireworks = "🎆"
+fire = "🔥"
+money = "💸"
+check = "✅"
+sos = "🆘"

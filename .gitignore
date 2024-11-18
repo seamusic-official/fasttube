@@ -2,3 +2,7 @@
 .env.production
 .env*.local
 .venv/
+db/
+media/
+.idea/
+__pycache__/

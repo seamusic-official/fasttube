@@ -1,7 +1,6 @@
 from aiogram import Router, F
 from aiogram.filters import Command
 from aiogram.types import Message
-from handlers.crud.crud import get_users
 from states import CreateNew
 from aiogram.fsm.context import FSMContext
 import requests
@@ -20,6 +19,7 @@ async def forward_message(message: Message, state: FSMContext):
 
 @newsletter_router.message(CreateNew.is_continue, F.photo)
 async def forward_message_state(message: Message):  
+    
     if message.from_user.username == "spxcyyy":
         all_users = await get_users()
         id_users = []

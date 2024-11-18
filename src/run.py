@@ -1,36 +1,35 @@
 import asyncio
 import logging
 from aiogram import Bot, Dispatcher
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import sessionmaker, declarative_base
-from config import settings
+from middlewares.auth import AuthMiddleware
 
-engine = create_async_engine("postgresql+asyncpg://postgres:root@185.251.90.58:5432/fasttube", echo=True)
-Base = declarative_base()
-async_session_maker = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+global_state = {}
+
 
 bot = Bot("7241033278:AAG4YXnZj-jtUW4xgQUqDYDy5MVQneaArdY", timeout=120)
 dp = Dispatcher()
-global_state = {}
-
-async def check_connection():
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
 
 async def main():
-    from handlers import setup
-    setup(dp)
-    
-    # await check_connection()  # Если это нужно, раскомментируй
-    # dp.message.middleware(UserMiddleware())  # Если нужно использовать middleware
+    from handlers.create_video import create_video_router  # Переместили сюда
+    from handlers.help import help_router
+    from handlers.newsletter import newsletter_router
+    from handlers.profile import profile_router
+    from handlers.security import security_router
+    from handlers.start import start_router
+    from handlers.youtube import youtube_router
 
+    logging.basicConfig(level=logging.DEBUG)
+
+    dp.include_router(create_video_router)
+    dp.include_router(help_router)
+    dp.include_router(newsletter_router)
+    dp.include_router(profile_router)
+    dp.include_router(security_router)
+    dp.include_router(start_router)
+    dp.include_router(youtube_router)
+    
+    dp.update.middleware(AuthMiddleware())
     await dp.start_polling(bot)
 
-if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO)
-    while True:
-        try:
-            asyncio.run(main())
-        except Exception as e:
-            logging.error(f"Бот потерпел неисправность: {e}")
-            asyncio.sleep(5)  # Подождем перед перезапуском
+if __name__ == "__main__":
+    asyncio.run(main())

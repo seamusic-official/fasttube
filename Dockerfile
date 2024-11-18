@@ -1,12 +1,13 @@
 FROM python:3.11.9
 
-COPY . /server
-WORKDIR /server
+COPY . /bot
+WORKDIR /bot
 
 ENV PYTHONDONTWRITEBYCODE 1
 ENV PYTHONUNBUFFERED 1
 
 RUN pip install --upgrade pip
-RUN pip install -r requirements.txt
+RUN pip install poetry
+RUN poetry install
 
-CMD ["make", "run"]
+CMD ["make", "run-local"]

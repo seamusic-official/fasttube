@@ -1,30 +1,44 @@
 install:
-	pip install -r requirements.txt
+	poetry install
 
-run:
-	python run.py
+run-local:
+	poetry run alembic upgrade head
+	poetry src/run.py
 
 build:
-	docker-compose -f docker-compose.$(for).yml build
+	poetry run docker-compose -f docker-compose.$(for).yml build
 
 start:
-	docker-compose -f docker-compose.$(for).yml up --force-recreate --remove-orphans
+	poetry run docker-compose -f docker-compose.$(for).yml up --force-recreate --remove-orphans
 
 up:
-	docker-compose -f docker-compose.$(for).yml up --force-recreate --remove-orphans -d
+	poetry run docker-compose -f docker-compose.$(for).yml up --force-recreate --remove-orphans -d
 
 stop:
-	docker-compose -f docker-compose.$(for).yml stop
+	poetry run docker-compose -f docker-compose.$(for).yml stop
 
 rm:
-	docker-compose -f docker-compose.$(for).yml rm
-	rm -rf db/
+	poetry run docker-compose -f docker-compose.$(for).yml rm
+	sudo rm -rf db
+
+revision:
+	poetry run alembic revision --autogenerate -m $(name)
+
+upgrade:
+	poetry run alembic upgrade $(revision)
+
+downgrade:
+	poetry run alembic downgrade $(revision)
 
 test:
-	docker-compose -f docker-compose.test.yml up --force-recreate --remove-orphans -d
-	python -m pytest
-	docker-compose stop
+	poetry run docker-compose -f docker-compose.test.yml up --force-recreate --remove-orphans -d
+	poetry run docker-compose stop
+
+test-local:
+	poetry run alembic upgrade head
+	poetry run pytest
 
 lint:
-	python -m flake8
-	python -m mypy -p src
+	poetry run flake8
+	poetry run mypy -p src --cache-dir=/dev/null --config-file=pyproject.toml
+	poetry run mypy -p tests --cache-dir=/dev/null --config-file=pyproject.toml

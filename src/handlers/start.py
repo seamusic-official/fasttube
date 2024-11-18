@@ -39,8 +39,6 @@ async def project_channel(message: Message):
         parse_mode="HTML"
         )
 
-
-
 @start_router.message(F.text == "🆘 Поддержка")
 async def support(message: Message):
     await message.answer(text="https://t.me/seamusicmgmtbot")

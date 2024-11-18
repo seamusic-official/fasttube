@@ -1,7 +1,27 @@
 version: '3.8'
 
 services:
-  app:
+  db:
+    image: postgres:16.2
+    container_name: fasttube_db
+    restart: always
+    environment:
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASS}
+    ports:
+      - ${DB_PORT}:5432
+    volumes:
+      - ./db/postgres:/var/lib/postgresql/data
+    networks:
+      - server
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${DB_USER}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  bot:
     build:
       context: .
       dockerfile: Dockerfile
@@ -12,7 +32,7 @@ services:
     env_file:
       - .env
     volumes:
-      - ./:/server/
+      - ./:/bot/
     networks:
       - server
 

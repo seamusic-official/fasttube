@@ -41,7 +41,7 @@ async def process_callback_photo_type(callback_query: CallbackQuery):
 @create_video_router.message(F.text == "🎆 Создать видео из фото")
 @create_video_router.message(Command("create_with_photo"))
 async def create_video(message: Message, state: FSMContext):
-    photo = FSInputFile("assets/photovideo.jpg")
+    photo = FSInputFile("/assets/photovideo.jpg")
     await message.answer_photo(photo=photo,
                                caption="Для начала процесса создания видео из фотографии, скиньте качественное изображение для того вида видео, которое хотите получить. Затем вы сможете скинуть mp3 и выбрать разрешение (YouTube, Instagram)",
                                reply_markup=main)

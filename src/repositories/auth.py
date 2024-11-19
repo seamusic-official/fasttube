@@ -16,8 +16,13 @@ class UserRepository(SQLAlchemyRepository):
         return await SQLAlchemyRepository.get(User, user_id)
 
     @staticmethod
-    async def get_all_users() -> Iterable[User]:
+    async def get_all_users(**kwargs) -> Iterable[User]:
         statement = select(User)
+        
+        if kwargs:
+            filters = [getattr(User, key) == value for key, value in kwargs.items()]
+            statement = statement.where(*filters)
+        
         return await SQLAlchemyRepository.scalars(statement)
 
     @staticmethod

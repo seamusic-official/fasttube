@@ -1,5 +1,5 @@
 import logging
-from run import bot, global_state
+from src.run import bot, global_state
 
 async def get_chat_id(username):
     chat = await bot.get_chat(username)

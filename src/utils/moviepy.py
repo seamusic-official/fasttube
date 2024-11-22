@@ -1,45 +1,52 @@
-from moviepy.editor import AudioFileClip, ImageClip, ffmpeg_tools
-from moviepy.editor import CompositeAudioClip, AudioFileClip, ColorClip, CompositeVideoClip
-from moviepy.editor import AudioFileClip, ColorClip, CompositeVideoClip, ImageClip
-from moviepy.editor import VideoFileClip, AudioFileClip, CompositeVideoClip, ColorClip, concatenate_videoclips
+from moviepy import *
 from PIL import Image
 import numpy as np
+
 import asyncio
 import uuid
 import os
-from PIL import Image
 
 
 async def create_video_with_stretched_image(audio_path, photo_path):
+    # Загружаем аудио
     audio = AudioFileClip(audio_path)
+    
+    # Загружаем изображение и изменяем его размер
     image = Image.open(photo_path)
     aspect_ratio = image.width / image.height
-    
     desired_height = 1080
     desired_width = int(desired_height * aspect_ratio)
     image = image.resize((desired_width, desired_height))
+    
+    # Позиция изображения на видео
     x_position = (1920 - desired_width) // 2
     y_position = 0
     
+    # Создаем черный фон для видео
     background_clip = ColorClip((1920, 1080), color=[0, 0, 0], duration=audio.duration)
+    
+    # Конвертируем PIL Image в массив NumPy
     image_np = np.array(image)
-    
-    image_clip = ImageClip(image_np, duration=audio.duration)
-    image_clip = image_clip.set_duration(audio.duration)
-    image_clip = image_clip.set_fps(24)
-    image_clip = image_clip.set_position((x_position, y_position))
-    final_clip = CompositeVideoClip([background_clip, image_clip])
-    final_clip = final_clip.set_audio(audio)
-    
-    directory = "youtube-videos/"
 
+    # Создаем ImageClip с самой нужной продолжительностью
+    image_clip = ImageClip(image_np, duration=audio.duration).set_fps(24).set_position((x_position, y_position))
+    
+    # Комбинируем фон и изображение
+    final_clip = CompositeVideoClip([background_clip, image_clip]).set_audio(audio)
+    
+    # Создаем директорию для видео, если ее не существует
+    directory = "youtube-videos/"
     if not os.path.exists(directory):
         os.makedirs(directory)
 
+    # Генерируем уникальное имя для видео файла
     video_path = f"{directory}youtube-video-{uuid.uuid4()}.mp4"
+    
+    # Записываем видеопоток в файл
     await asyncio.to_thread(final_clip.write_videofile, video_path, fps=24, codec='libx264')
 
     return {"video_path": video_path, "duration": audio.duration}
+
 
 async def create_instagram_video_with_centered_image(audio_path, photo_path):
     audio = AudioFileClip(audio_path)

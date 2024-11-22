@@ -40,5 +40,3 @@ dmypy.json
 # Qodana
 qodana.yaml
 
-# Running
-Makefile

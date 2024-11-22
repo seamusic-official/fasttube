@@ -1,5 +1,5 @@
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
-from keyboards.emoji import *
+from src.keyboards.emoji import *
 
 
 main = ReplyKeyboardMarkup(keyboard=[

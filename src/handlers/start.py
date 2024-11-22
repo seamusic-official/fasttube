@@ -1,9 +1,9 @@
 from aiogram import Router, F
 from aiogram.filters import CommandStart
 from aiogram.types import FSInputFile, CallbackQuery, Message
-from keyboards.check_subscribe import check_subscribe
-from utils.permissions import get_channel_members, get_chat_id
-from keyboards.main import main
+from src.keyboards.check_subscribe import check_subscribe
+from src.utils.permissions import get_channel_members, get_chat_id
+from src.keyboards.main import main
 
 start_router = Router()
 
@@ -20,7 +20,7 @@ async def cmd_start(message: Message):
     if chat_member_seamusicmgmt.status in ["member", "administrator", "creator"] and chat_member_fasttube.status in ["member", "administrator", "creator"]:
         caption = f"Привет, {message.from_user.username}! Создано разработчиком @whyspacy как часть проекта @seamusicmgmt. Бот может создавать видео из mp3 и изображения или видео (зацикливая его на всю продолжительность аудио), а затем при желании вы можете выложить видео на ютуб НАПРЯМУЮ из этого телеграм бота.\n\n/start - перезапустить \n/profile - ваш профиль\n/create_with_photo - Создать видео из фото\n/create_with_video - Создать зацикливающееся видео\n/help - все комманды \n\nНа корм разработчику и на хостинг: 2202206254377430 (Сбер)"
         try:
-            photo = FSInputFile("assets/fasttube-description-picture.png")
+            photo = FSInputFile("src/assets/fasttube-description-picture.png")
         except Exception as e:
             print(e)
         await message.answer_photo(photo=photo, caption=caption, reply_markup=main)
@@ -32,7 +32,7 @@ async def cmd_start(message: Message):
 
 @start_router.message(F.text == "✅ Канал проекта")
 async def project_channel(message: Message):
-    photo = FSInputFile("assets/logofast.jpg")
+    photo = FSInputFile("src/assets/logofast.jpg")
     await message.answer_photo(
         photo=photo,
         caption="<b>НОВОСТИ ПРОЕКТА, ИВЕНТЫ, РОЗЫГРЫШЫ</b>\n\nКанал - https://t.me/fasttubeofficial \nДругие сервисы SeaMusic - https://t.me/seamusicmgmt",

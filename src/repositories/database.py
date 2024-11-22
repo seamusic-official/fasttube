@@ -2,14 +2,18 @@ from abc import ABC
 from dataclasses import dataclass
 from typing import Iterable, Any
 
-from sqlalchemy.sql import Executable
-from models.base import async_session_maker, Base
+from sqlalchemy import Executable
+from src.models.base import async_session_maker, Base
 
 
 @dataclass
 class BaseDatabaseRepository(ABC):
-    pass
+    ...
 
+
+@dataclass
+class DatabaseRepositories(ABC):
+    ...
 
 @dataclass
 class SQLAlchemyRepository(BaseDatabaseRepository):

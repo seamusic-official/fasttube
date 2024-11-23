@@ -31,12 +31,11 @@ downgrade:
 	poetry run alembic downgrade $(revision)
 
 test:
-	poetry run docker-compose -f docker-compose.test.yml up --force-recreate --remove-orphans -d
-	poetry run docker-compose stop
+	poetry run docker-compose -f docker-compose.test.yml up --force-recreate --remove-orphans --abort-on-container-exit
 
 test-local:
 	poetry run alembic upgrade head
-	poetry run pytest
+	poetry run pytest -s --verbose
 
 lint:
 	poetry run flake8

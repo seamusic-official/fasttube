@@ -2,6 +2,12 @@ from aiogram import BaseMiddleware
 from aiogram.types import Message, Update
 from typing import Awaitable, Callable, Dict, Any
 from src.repositories.auth import UserRepository
+import logging
+
+logging.basicConfig(level=logging.ERROR)
+logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.CRITICAL)
+logging.basicConfig(level=logging.INFO)
 
 
 class AuthMiddleware(BaseMiddleware):
@@ -32,4 +38,5 @@ class AuthMiddleware(BaseMiddleware):
 
             return await handler(event, data)
         except Exception as e:
+            logging.error("Ошибка: %s", str(e), exc_info=True)
             await message.answer(f"Упс! Чето пошло не так. Отправь это в поддержку - @seamusicmgmtbot \nОшибка: {str(e)}")

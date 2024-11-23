@@ -1,3 +1,4 @@
+import logging
 from moviepy import *
 from PIL import Image
 import numpy as np
@@ -18,33 +19,29 @@ async def create_video_with_stretched_image(audio_path, photo_path):
     desired_width = int(desired_height * aspect_ratio)
     image = image.resize((desired_width, desired_height))
     
-    # Позиция изображения на видео
     x_position = (1920 - desired_width) // 2
     y_position = 0
     
-    # Создаем черный фон для видео
     background_clip = ColorClip((1920, 1080), color=[0, 0, 0], duration=audio.duration)
     
-    # Конвертируем PIL Image в массив NumPy
     image_np = np.array(image)
 
-    # Создаем ImageClip с самой нужной продолжительностью
-    image_clip = ImageClip(image_np, duration=audio.duration).set_fps(24).set_position((x_position, y_position))
+    image_clip = ImageClip(image_np).duration(audio.duration)
+    image_clip = ImageClip(image_np).pos([x_position, y_position])
     
-    # Комбинируем фон и изображение
-    final_clip = CompositeVideoClip([background_clip, image_clip]).set_audio(audio)
-    
-    # Создаем директорию для видео, если ее не существует
+    final_clip = CompositeVideoClip([background_clip, image_clip]).audio(audio)
+
     directory = "youtube-videos/"
     if not os.path.exists(directory):
         os.makedirs(directory)
 
-    # Генерируем уникальное имя для видео файла
     video_path = f"{directory}youtube-video-{uuid.uuid4()}.mp4"
     
-    # Записываем видеопоток в файл
-    await asyncio.to_thread(final_clip.write_videofile, video_path, fps=24, codec='libx264')
-
+    try:
+        await asyncio.to_thread(final_clip.write_videofile, video_path, fps=24, codec='libx264')
+    except Exception as e:
+        logging.error("Ошибка при создании видео: %s", str(e), exc_info=True)
+        
     return {"video_path": video_path, "duration": audio.duration}
 
 

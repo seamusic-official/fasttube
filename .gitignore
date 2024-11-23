@@ -26,6 +26,7 @@ poetry.lock
 # Environments
 .env
 .env.test
+.env.production
 .venv/
 
 # mypy

@@ -31,12 +31,12 @@ class AuthMiddleware(BaseMiddleware):
                 print("Регистрация:", response)
                 await message.answer("Поздравляем с регистрацией! 🎉")
             else:
-                await message.answer("С возвращением! 👋")
+                pass
 
-            users = await user_repo.get_scalars_users()
-            await message.answer(f"Список пользователей: {[user.telegram_id for user in users]}")
+            # users = await user_repo.get_scalars_users()
+            # await message.answer(f"Список пользователей: {[user.telegram_id for user in users]}")
 
             return await handler(event, data)
         except Exception as e:
             logging.error("Ошибка: %s", str(e), exc_info=True)
-            await message.answer(f"Упс! Чето пошло не так. Отправь это в поддержку - @seamusicmgmtbot \nОшибка: {str(e)}")
+            await message.answer(f"Упс! Чето пошло по пизде, уже исправляем. Отправь этот момент в поддержку для ускорения процесса - @seamusicmgmtbot \nОшибка: {str(e)}")

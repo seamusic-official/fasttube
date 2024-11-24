@@ -1,9 +1,11 @@
 from typing import Optional
-from sqlalchemy.sql import select
-from repositories.database import SQLAlchemyRepository
-from models import User
+from sqlalchemy import Executable, func, select, delete
+from src.repositories.database import SQLAlchemyRepository
+from src.models import User
 from typing import Iterable
+from dataclasses import dataclass
 
+@dataclass
 class UserRepository(SQLAlchemyRepository):
     @staticmethod
     async def add_user(username: str, full_name: str, telegram_id: str) -> User:
@@ -16,7 +18,7 @@ class UserRepository(SQLAlchemyRepository):
         return await SQLAlchemyRepository.get(User, user_id)
 
     @staticmethod
-    async def get_all_users(**kwargs) -> Iterable[User]:
+    async def get_users_with_filters(**kwargs) -> Iterable[User]:
         statement = select(User)
         
         if kwargs:
@@ -24,6 +26,12 @@ class UserRepository(SQLAlchemyRepository):
             statement = statement.where(*filters)
         
         return await SQLAlchemyRepository.scalars(statement)
+    
+    @staticmethod
+    async def get_scalars_users():
+        query: Executable = select(User)
+        models: Iterable[User] = await SQLAlchemyRepository.scalars(query)
+        return list(models)
 
     @staticmethod
     async def update_user(user_id: int, username: Optional[str] = None, full_name: Optional[str] = None, telegram_id: Optional[str] = None) -> Optional[User]:
@@ -43,5 +51,4 @@ class UserRepository(SQLAlchemyRepository):
     async def delete_user(user_id: int) -> None:
         user = await UserRepository.get_user_by_id(user_id)
         if user:
-            await SQLAlchemyRepository.execute(User.__table__.delete().where(User.id == user_id))
-
+            await SQLAlchemyRepository.execute(User.table.delete().where(User.id == user_id))

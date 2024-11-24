@@ -26,6 +26,7 @@ poetry.lock
 # Environments
 .env
 .env.test
+.env.production
 .venv/
 
 # mypy
@@ -40,5 +41,4 @@ dmypy.json
 # Qodana
 qodana.yaml
 
-# Running
-Makefile
+media/

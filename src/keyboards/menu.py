@@ -1,5 +1,5 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-from keyboards.emoji import *
+from src.keyboards.emoji import *
 
 
 youtube = InlineKeyboardMarkup(inline_keyboard=[

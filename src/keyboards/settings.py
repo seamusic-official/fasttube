@@ -1,5 +1,5 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-from keyboards.emoji import *
+from src.keyboards.emoji import *
 
 
 settings = InlineKeyboardMarkup(inline_keyboard=[

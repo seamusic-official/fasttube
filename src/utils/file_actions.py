@@ -1,6 +1,6 @@
 import os
 import uuid
-from moviepy.editor import VideoFileClip
+from moviepy import *
 from aiofiles import open as aio_open
 
 async def delete_file(file_path):

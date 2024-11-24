@@ -2,15 +2,14 @@ from aiogram import Router, F
 from aiogram.filters import Command
 from aiogram.types import Message, CallbackQuery
 from aiogram.types import FSInputFile
-from run import global_state
-from moviepy.editor import VideoFileClip
 from aiogram.fsm.context import FSMContext
-from states import CreateVideo, CreateVideoFromVideo
-from utils.file_actions import delete_file, download_and_save_audio, download_and_save_photo, download_and_save_video
-from utils.moviepy import create_instagram_video_with_centered_image, create_instagram_video_with_repeating_video, create_video_with_repeating_video, create_video_with_stretched_image
-from keyboards.screen_resolutions import screen_resolution_photo_type, screen_resolution_video_type
-from keyboards.menu import youtube
-from keyboards.main import main
+from src.run import global_state
+from src.states import CreateVideo, CreateVideoFromVideo
+from src.utils.file_actions import delete_file, download_and_save_audio, download_and_save_photo, download_and_save_video
+from src.utils.moviepy import create_instagram_video_with_centered_image, create_instagram_video_with_repeating_video, create_video_with_repeating_video, create_video_with_stretched_image
+from src.keyboards.screen_resolutions import screen_resolution_photo_type, screen_resolution_video_type
+from src.keyboards.menu import youtube
+from src.keyboards.main import main
 
 
 create_video_router = Router()
@@ -41,7 +40,7 @@ async def process_callback_photo_type(callback_query: CallbackQuery):
 @create_video_router.message(F.text == "🎆 Создать видео из фото")
 @create_video_router.message(Command("create_with_photo"))
 async def create_video(message: Message, state: FSMContext):
-    photo = FSInputFile("/assets/photovideo.jpg")
+    photo = FSInputFile("src/assets/photovideo.jpg")
     await message.answer_photo(photo=photo,
                                caption="Для начала процесса создания видео из фотографии, скиньте качественное изображение для того вида видео, которое хотите получить. Затем вы сможете скинуть mp3 и выбрать разрешение (YouTube, Instagram)",
                                reply_markup=main)

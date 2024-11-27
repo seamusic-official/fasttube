@@ -5,6 +5,7 @@ __pycache__/
 
 # Database backup
 db/
+src/media
 
 # Unit test / coverage reports
 coverage/

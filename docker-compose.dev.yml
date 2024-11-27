@@ -10,16 +10,16 @@ services:
       - POSTGRES_USER=${DB_USER}
       - POSTGRES_PASSWORD=${DB_PASS}
     ports:
-      - ${DB_PORT}:5432
+      - ${DB_PORT}:5555
     volumes:
       - ./db/postgres:/var/lib/postgresql/data
-    networks:
-      - server
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U ${DB_USER}']
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - bot_server
 
   bot:
     build:
@@ -34,8 +34,8 @@ services:
     volumes:
       - ./:/bot/
     networks:
-      - server
+      - bot_server
 
 networks:
-  server:
+  bot_server:
     driver: "bridge"

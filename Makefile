@@ -1,5 +1,7 @@
 install:
+	poetry lock
 	poetry install
+
 
 run-local:
 	poetry run alembic upgrade head

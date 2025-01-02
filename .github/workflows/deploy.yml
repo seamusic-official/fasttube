@@ -1,24 +1,23 @@
-name: Deploy to Remote Server
+name: Deploy to Server
 
 on:
   push:
     branches:
-      - master
+      - main  # Замените на вашу основную ветку
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
 
-      - name: Deploy to server
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-        run: |
-          echo "$SSH_PRIVATE_KEY"
-          echo "$SSH_PRIVATE_KEY" > private_key
-          chmod 600 private_key
-          rsync -avz -e "ssh -i private_key -o StrictHostKeyChecking=no" . root@185.251.90.58:/root/fasttube
-          ssh -i private_key -o StrictHostKeyChecking=no root@185.251.90.58 -v 'systemctl daemon-reload && systemctl restart fattube'
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up SSH
+      uses: webfactory/ssh-agent@v0.5.3
+      with:
+        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+    - name: Deploy to Server
+      run: |
+        ssh -o StrictHostKeyChecking=no root@212.193.30.238 "systemctl restart fasttube.service"

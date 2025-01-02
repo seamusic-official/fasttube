@@ -1,0 +1,45 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Database backup
+db/
+src/media
+
+# Unit test / coverage reports
+coverage/
+.coverage
+.coverage.*
+*.cover
+.pytest_cache/
+
+# Translations
+*.mo
+*.pot
+
+# pyenv
+.python-version
+
+# poetry
+poetry.lock
+
+# Environments
+.env
+.env.test
+.env.production
+.venv/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# IDE/editor settings
+.idea/
+.vscode/
+
+# Qodana
+qodana.yaml
+
+media/

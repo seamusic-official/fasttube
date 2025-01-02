@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16.2
+    container_name: db_server
+    restart: always
+    environment:
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASS}
+    ports:
+      - ${DB_PORT}:5432
+    volumes:
+      - ./db/server_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${DB_USER}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sm-bot-server
+
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sm_bot_server
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - '8000:8000'
+    env_file:
+      - .env
+    volumes:
+      - ./:/bot_server/
+    networks:
+      - sm-bot-server
+
+
+networks:
+  sm-bot-server:
+    driver: "bridge"

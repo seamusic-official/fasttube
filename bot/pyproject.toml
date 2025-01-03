@@ -30,6 +30,7 @@ requests = "^2.32.3"
 types-requests = "^2.32.0.20240712"
 aiogram = "^3.15.0"
 moviepy = "^1.0.3"
+google-auth-oauthlib
 
 [tool.poetry.group.dev.dependencies]
 black = "^24.8.0"

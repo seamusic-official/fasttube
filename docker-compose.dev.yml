@@ -3,7 +3,7 @@ version: '3.8'
 services:
   db:
     image: postgres:16.2
-    container_name: db_server
+    container_name: sm_db_bot
     restart: always
     environment:
       - POSTGRES_DB=${DB_NAME}
@@ -19,11 +19,11 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - sm-bot-server
+      - sm-bot
 
   server:
     build:
-      context: .
+      context: ./server
       dockerfile: Dockerfile
     container_name: sm_bot_server
     depends_on:
@@ -36,9 +36,21 @@ services:
     volumes:
       - ./:/bot_server/
     networks:
-      - sm-bot-server
+      - sm-bot
 
+  bot:
+    build:
+      context: ./bot
+      dockerfile: Dockerfile
+    container_name: sm_bot
+    restart: always
+    env_file:
+      - .env
+    volumes:
+      - ./:/sm_bot/
+    networks:
+      - sm-bot
 
 networks:
-  sm-bot-server:
+  sm-bot:
     driver: "bridge"

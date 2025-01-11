@@ -6,8 +6,8 @@ WORKDIR /bot_server
 ENV PYTHONDONTWRITEBYCODE 1
 ENV PYTHONUNBUFFERED 1
 
-RUN pip install --upgrade pip
-RUN pip install poetry
+RUN pip install --upgrade pip && pip install --no-cache-dir poetry
+
 RUN poetry install
 
 CMD ["make", "run-local"]
